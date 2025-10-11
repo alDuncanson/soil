@@ -43,11 +43,9 @@ mod tests {
     fn test_propagate_leaf() {
         let _ = grow_branch(&format!("{TEST_ROOT}/test"));
 
-        // Create a source file (scion) and destination path (rootstock)
         let scion = &*format!("{TEST_ROOT}/test/scion.txt");
         let rootstock = &*format!("{TEST_ROOT}/test/rootstock.txt");
 
-        // Create the source file with some content
         std::fs::write(scion, "test content").expect("Failed to create test file");
 
         assert!(
@@ -55,7 +53,6 @@ mod tests {
             "Failed to propagate leaf"
         );
 
-        // Verify the file was copied successfully
         assert!(
             std::fs::exists(rootstock).unwrap_or(false),
             "Rootstock file was not created"
