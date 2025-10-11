@@ -1,5 +1,9 @@
 use clap::{Parser, Subcommand};
-use soil::{exists, grow_branch, propagate_leaf, trace_to_root};
+use soil::{
+    clear_grove, create_hard_graft, examine_specimen, exists, grow_branch, harvest_essence,
+    inscribe_leaf, propagate_leaf, prune_branch, read_chronicle, shed_leaf, sprout_branch,
+    survey_canopy, trace_to_root, transplant,
+};
 use std::process;
 
 /// A CLI for soil
@@ -19,7 +23,7 @@ enum Commands {
     /// # Examples
     ///
     /// ```
-    /// soil trace ./root
+    /// soil trace ./test_root
     /// ```
     Trace {
         /// The path to canonicalize
@@ -31,7 +35,7 @@ enum Commands {
     /// # Examples
     ///
     /// ```
-    /// soil propagate scion.txt rootstock.txt
+    /// soil propagate source.txt destination.txt
     /// ```
     Propagate {
         /// The source file to copy
@@ -45,11 +49,149 @@ enum Commands {
     /// # Examples
     ///
     /// ```
-    /// soil grow ./root/branch/
+    /// soil grow ./new/directory/path
     /// ```
     Grow {
         /// The directory path to create
         path: String,
+    },
+
+    /// Create a single directory (parent must exist)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// soil sprout ./parent/child
+    /// ```
+    Sprout {
+        /// The directory path to create
+        path: String,
+    },
+
+    /// List the contents of a directory
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// soil survey ./directory
+    /// ```
+    Survey {
+        /// The directory path to list
+        path: String,
+    },
+
+    /// Remove a file
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// soil shed ./file.txt
+    /// ```
+    Shed {
+        /// The file path to remove
+        path: String,
+    },
+
+    /// Remove an empty directory
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// soil prune ./empty_directory
+    /// ```
+    Prune {
+        /// The directory path to remove
+        path: String,
+    },
+
+    /// Remove a directory and all its contents
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// soil clear ./directory
+    /// ```
+    Clear {
+        /// The directory path to remove recursively
+        path: String,
+    },
+
+    /// Move or rename a file or directory
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// soil transplant old_name.txt new_name.txt
+    /// ```
+    Transplant {
+        /// The current path
+        from: String,
+        /// The destination path
+        to: String,
+    },
+
+    /// Get metadata information about a file or directory
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// soil examine ./file.txt
+    /// ```
+    Examine {
+        /// The path to examine
+        path: String,
+    },
+
+    /// Read file content as bytes
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// soil harvest ./file.txt
+    /// ```
+    Harvest {
+        /// The file path to read
+        path: String,
+    },
+
+    /// Read file content as text
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// soil chronicle ./file.txt
+    /// ```
+    Chronicle {
+        /// The file path to read
+        path: String,
+    },
+
+    /// Write content to a file
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// soil inscribe ./file.txt "content"
+    /// ```
+    Inscribe {
+        /// The file path to write to
+        path: String,
+        /// The content to write
+        content: String,
+    },
+
+    /// Create a hard link
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// soil graft original.txt linked.txt
+    /// ```
+    Graft {
+        /// The original file path
+        original: String,
+        /// The hard link path
+        link: String,
     },
 
     /// Check if a path exists
@@ -98,6 +240,149 @@ fn main() {
             }
             Err(error) => {
                 eprintln!("Error growing branch '{}': {}", path, error);
+                process::exit(1);
+            }
+        },
+
+        Commands::Sprout { path } => match sprout_branch(&path) {
+            Ok(_) => {
+                println!("Successfully sprouted branch at '{}'", path);
+            }
+            Err(error) => {
+                eprintln!("Error sprouting branch '{}': {}", path, error);
+                process::exit(1);
+            }
+        },
+
+        Commands::Survey { path } => match survey_canopy(&path) {
+            Ok(contents) => {
+                println!("Contents of '{}':", path);
+                for item in contents {
+                    println!("  {}", item);
+                }
+            }
+            Err(error) => {
+                eprintln!("Error surveying canopy '{}': {}", path, error);
+                process::exit(1);
+            }
+        },
+
+        Commands::Shed { path } => match shed_leaf(&path) {
+            Ok(_) => {
+                println!("Successfully shed leaf '{}'", path);
+            }
+            Err(error) => {
+                eprintln!("Error shedding leaf '{}': {}", path, error);
+                process::exit(1);
+            }
+        },
+
+        Commands::Prune { path } => match prune_branch(&path) {
+            Ok(_) => {
+                println!("Successfully pruned branch '{}'", path);
+            }
+            Err(error) => {
+                eprintln!("Error pruning branch '{}': {}", path, error);
+                process::exit(1);
+            }
+        },
+
+        Commands::Clear { path } => match clear_grove(&path) {
+            Ok(_) => {
+                println!("Successfully cleared grove '{}'", path);
+            }
+            Err(error) => {
+                eprintln!("Error clearing grove '{}': {}", path, error);
+                process::exit(1);
+            }
+        },
+
+        Commands::Transplant { from, to } => match transplant(&from, &to) {
+            Ok(_) => {
+                println!("Successfully transplanted '{}' to '{}'", from, to);
+            }
+            Err(error) => {
+                eprintln!("Error transplanting '{}' to '{}': {}", from, to, error);
+                process::exit(1);
+            }
+        },
+
+        Commands::Examine { path } => match examine_specimen(&path) {
+            Ok(metadata) => {
+                println!("Specimen '{}' characteristics:", path);
+                println!("  Size: {} bytes", metadata.len());
+                println!(
+                    "  Type: {}",
+                    if metadata.is_file() {
+                        "File"
+                    } else if metadata.is_dir() {
+                        "Directory"
+                    } else {
+                        "Other"
+                    }
+                );
+                println!("  Read-only: {}", metadata.permissions().readonly());
+                if let Ok(modified) = metadata.modified() {
+                    println!("  Modified: {:?}", modified);
+                }
+            }
+            Err(error) => {
+                eprintln!("Error examining specimen '{}': {}", path, error);
+                process::exit(1);
+            }
+        },
+
+        Commands::Harvest { path } => match harvest_essence(&path) {
+            Ok(content) => {
+                println!("Harvested {} bytes from '{}'", content.len(), path);
+                match String::from_utf8(content) {
+                    Ok(text) => println!("Content:\n{}", text),
+                    Err(_) => println!("Content contains non-UTF8 data"),
+                }
+            }
+            Err(error) => {
+                eprintln!("Error harvesting essence from '{}': {}", path, error);
+                process::exit(1);
+            }
+        },
+
+        Commands::Chronicle { path } => match read_chronicle(&path) {
+            Ok(content) => {
+                println!("Chronicle from '{}':", path);
+                println!("{}", content);
+            }
+            Err(error) => {
+                eprintln!("Error reading chronicle from '{}': {}", path, error);
+                process::exit(1);
+            }
+        },
+
+        Commands::Inscribe { path, content } => match inscribe_leaf(&path, &content) {
+            Ok(_) => {
+                println!(
+                    "Successfully inscribed leaf at '{}' ({} characters)",
+                    path,
+                    content.len()
+                );
+            }
+            Err(error) => {
+                eprintln!("Error inscribing leaf at '{}': {}", path, error);
+                process::exit(1);
+            }
+        },
+
+        Commands::Graft { original, link } => match create_hard_graft(&original, &link) {
+            Ok(_) => {
+                println!(
+                    "Successfully created hard graft from '{}' to '{}'",
+                    original, link
+                );
+            }
+            Err(error) => {
+                eprintln!(
+                    "Error creating hard graft from '{}' to '{}': {}",
+                    original, link, error
+                );
                 process::exit(1);
             }
         },
