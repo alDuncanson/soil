@@ -1,4 +1,5 @@
 use std::fs;
+use std::path::Path;
 
 pub const TEST_ROOT: &str = "./test_root";
 
@@ -34,7 +35,7 @@ pub const TEST_ROOT: &str = "./test_root";
 ///
 /// assert!(trace_to_root("/non/existent/path").is_err());
 /// ```
-pub fn trace_to_root<P: AsRef<str>>(path: P) -> Result<String, std::io::Error> {
+pub fn trace_to_root<P: AsRef<Path>>(path: P) -> Result<String, std::io::Error> {
     match fs::canonicalize(path.as_ref()) {
         Ok(path) => Ok(path.to_string_lossy().into_owned()),
         Err(error) => Err(error),
@@ -69,7 +70,10 @@ pub fn trace_to_root<P: AsRef<str>>(path: P) -> Result<String, std::io::Error> {
 /// soil::shed_leaf("source_prop.txt").unwrap();
 /// soil::shed_leaf("dest_prop.txt").unwrap();
 /// ```
-pub fn propagate_leaf<P: AsRef<str>>(scion: P, rootstock: P) -> Result<(), std::io::Error> {
+pub fn propagate_leaf<P1: AsRef<Path>, P2: AsRef<Path>>(
+    scion: P1,
+    rootstock: P2,
+) -> Result<(), std::io::Error> {
     match fs::copy(scion.as_ref(), rootstock.as_ref()) {
         Ok(_) => Ok(()),
         Err(error) => Err(error),
@@ -109,7 +113,7 @@ pub fn propagate_leaf<P: AsRef<str>>(scion: P, rootstock: P) -> Result<(), std::
 /// assert!(exists("existing_grow"));
 /// soil::prune_branch("existing_grow").unwrap();
 /// ```
-pub fn grow_branch<P: AsRef<str>>(path: P) -> Result<(), std::io::Error> {
+pub fn grow_branch<P: AsRef<Path>>(path: P) -> Result<(), std::io::Error> {
     match fs::create_dir_all(path.as_ref()) {
         Ok(_) => Ok(()),
         Err(error) => Err(error),
@@ -145,7 +149,7 @@ pub fn grow_branch<P: AsRef<str>>(path: P) -> Result<(), std::io::Error> {
 /// soil::prune_branch("temp_dir_exists").unwrap();
 /// soil::shed_leaf("temp_file_exists.txt").unwrap();
 /// ```
-pub fn exists<P: AsRef<str>>(path: P) -> bool {
+pub fn exists<P: AsRef<Path>>(path: P) -> bool {
     fs::exists(path.as_ref()).unwrap_or(false)
 }
 
@@ -182,7 +186,7 @@ pub fn exists<P: AsRef<str>>(path: P) -> bool {
 ///
 /// clear_grove("test_canopy_survey").unwrap();
 /// ```
-pub fn survey_canopy<P: AsRef<str>>(path: P) -> Result<Vec<String>, std::io::Error> {
+pub fn survey_canopy<P: AsRef<Path>>(path: P) -> Result<Vec<String>, std::io::Error> {
     let entries = fs::read_dir(path.as_ref())?;
     let mut names = Vec::new();
 
@@ -225,7 +229,7 @@ pub fn survey_canopy<P: AsRef<str>>(path: P) -> Result<Vec<String>, std::io::Err
 /// assert!(exists("parent_sprout/child"));
 /// clear_grove("parent_sprout").unwrap();
 /// ```
-pub fn sprout_branch<P: AsRef<str>>(path: P) -> Result<(), std::io::Error> {
+pub fn sprout_branch<P: AsRef<Path>>(path: P) -> Result<(), std::io::Error> {
     fs::create_dir(path.as_ref())
 }
 
@@ -252,7 +256,7 @@ pub fn sprout_branch<P: AsRef<str>>(path: P) -> Result<(), std::io::Error> {
 /// shed_leaf("temp_leaf_shed.txt").unwrap();
 /// assert!(!exists("temp_leaf_shed.txt"));
 /// ```
-pub fn shed_leaf<P: AsRef<str>>(path: P) -> Result<(), std::io::Error> {
+pub fn shed_leaf<P: AsRef<Path>>(path: P) -> Result<(), std::io::Error> {
     fs::remove_file(path.as_ref())
 }
 
@@ -281,7 +285,7 @@ pub fn shed_leaf<P: AsRef<str>>(path: P) -> Result<(), std::io::Error> {
 /// prune_branch("empty_branch_prune").unwrap();
 /// assert!(!exists("empty_branch_prune"));
 /// ```
-pub fn prune_branch<P: AsRef<str>>(path: P) -> Result<(), std::io::Error> {
+pub fn prune_branch<P: AsRef<Path>>(path: P) -> Result<(), std::io::Error> {
     fs::remove_dir(path.as_ref())
 }
 
@@ -311,7 +315,7 @@ pub fn prune_branch<P: AsRef<str>>(path: P) -> Result<(), std::io::Error> {
 /// clear_grove("grove_clear").unwrap();
 /// assert!(!exists("grove_clear"));
 /// ```
-pub fn clear_grove<P: AsRef<str>>(path: P) -> Result<(), std::io::Error> {
+pub fn clear_grove<P: AsRef<Path>>(path: P) -> Result<(), std::io::Error> {
     fs::remove_dir_all(path.as_ref())
 }
 
@@ -342,7 +346,10 @@ pub fn clear_grove<P: AsRef<str>>(path: P) -> Result<(), std::io::Error> {
 /// assert!(exists("transplanted_trans.txt"));
 /// shed_leaf("transplanted_trans.txt").unwrap();
 /// ```
-pub fn transplant<P: AsRef<str>>(from: P, to: P) -> Result<(), std::io::Error> {
+pub fn transplant<P1: AsRef<Path>, P2: AsRef<Path>>(
+    from: P1,
+    to: P2,
+) -> Result<(), std::io::Error> {
     fs::rename(from.as_ref(), to.as_ref())
 }
 
@@ -372,7 +379,7 @@ pub fn transplant<P: AsRef<str>>(from: P, to: P) -> Result<(), std::io::Error> {
 /// assert!(metadata.is_file());
 /// shed_leaf("specimen_exam.txt").unwrap();
 /// ```
-pub fn examine_specimen<P: AsRef<str>>(path: P) -> Result<fs::Metadata, std::io::Error> {
+pub fn examine_specimen<P: AsRef<Path>>(path: P) -> Result<fs::Metadata, std::io::Error> {
     fs::metadata(path.as_ref())
 }
 
@@ -400,7 +407,7 @@ pub fn examine_specimen<P: AsRef<str>>(path: P) -> Result<fs::Metadata, std::io:
 /// assert_eq!(content, b"binary content");
 /// shed_leaf("essence_harvest.txt").unwrap();
 /// ```
-pub fn harvest_essence<P: AsRef<str>>(path: P) -> Result<Vec<u8>, std::io::Error> {
+pub fn harvest_essence<P: AsRef<Path>>(path: P) -> Result<Vec<u8>, std::io::Error> {
     fs::read(path.as_ref())
 }
 
@@ -429,7 +436,7 @@ pub fn harvest_essence<P: AsRef<str>>(path: P) -> Result<Vec<u8>, std::io::Error
 /// assert_eq!(story, "Once upon a time...");
 /// shed_leaf("chronicle_read.txt").unwrap();
 /// ```
-pub fn read_chronicle<P: AsRef<str>>(path: P) -> Result<String, std::io::Error> {
+pub fn read_chronicle<P: AsRef<Path>>(path: P) -> Result<String, std::io::Error> {
     fs::read_to_string(path.as_ref())
 }
 
@@ -465,7 +472,7 @@ pub fn read_chronicle<P: AsRef<str>>(path: P) -> Result<String, std::io::Error> 
 /// shed_leaf("story_inscribe.txt").unwrap();
 /// shed_leaf("data_inscribe.bin").unwrap();
 /// ```
-pub fn inscribe_leaf<P: AsRef<str>, C: AsRef<[u8]>>(
+pub fn inscribe_leaf<P: AsRef<Path>, C: AsRef<[u8]>>(
     path: P,
     contents: C,
 ) -> Result<(), std::io::Error> {
@@ -503,7 +510,10 @@ pub fn inscribe_leaf<P: AsRef<str>, C: AsRef<[u8]>>(
 /// shed_leaf("original_graft.txt").unwrap();
 /// shed_leaf("grafted_hard.txt").unwrap();
 /// ```
-pub fn create_hard_graft<P: AsRef<str>>(original: P, link: P) -> Result<(), std::io::Error> {
+pub fn create_hard_graft<P1: AsRef<Path>, P2: AsRef<Path>>(
+    original: P1,
+    link: P2,
+) -> Result<(), std::io::Error> {
     fs::hard_link(original.as_ref(), link.as_ref())
 }
 
@@ -534,7 +544,7 @@ pub fn create_hard_graft<P: AsRef<str>>(original: P, link: P) -> Result<(), std:
 /// shed_leaf("target_soft.txt").unwrap();
 /// shed_leaf("link_soft.txt").unwrap();
 /// ```
-pub fn read_soft_connection<P: AsRef<str>>(path: P) -> Result<String, std::io::Error> {
+pub fn read_soft_connection<P: AsRef<Path>>(path: P) -> Result<String, std::io::Error> {
     match fs::read_link(path.as_ref()) {
         Ok(path_buf) => Ok(path_buf.to_string_lossy().into_owned()),
         Err(error) => Err(error),
@@ -569,7 +579,7 @@ pub fn read_soft_connection<P: AsRef<str>>(path: P) -> Result<String, std::io::E
 /// adjust_vitality("specimen_vital.txt", perms).unwrap();
 /// shed_leaf("specimen_vital.txt").unwrap();
 /// ```
-pub fn adjust_vitality<P: AsRef<str>>(
+pub fn adjust_vitality<P: AsRef<Path>>(
     path: P,
     permissions: fs::Permissions,
 ) -> Result<(), std::io::Error> {
@@ -603,7 +613,7 @@ pub fn adjust_vitality<P: AsRef<str>>(
 /// shed_leaf("target_outer.txt").unwrap();
 /// shed_leaf("link_outer.txt").unwrap();
 /// ```
-pub fn examine_outer_characteristics<P: AsRef<str>>(
+pub fn examine_outer_characteristics<P: AsRef<Path>>(
     path: P,
 ) -> Result<fs::Metadata, std::io::Error> {
     fs::symlink_metadata(path.as_ref())
@@ -638,7 +648,10 @@ pub fn examine_outer_characteristics<P: AsRef<str>>(
 /// shed_leaf("soft_link_connect.txt").unwrap();
 /// ```
 #[cfg(unix)]
-pub fn create_soft_connection<P: AsRef<str>>(original: P, link: P) -> Result<(), std::io::Error> {
+pub fn create_soft_connection<P1: AsRef<Path>, P2: AsRef<Path>>(
+    original: P1,
+    link: P2,
+) -> Result<(), std::io::Error> {
     std::os::unix::fs::symlink(original.as_ref(), link.as_ref())
 }
 
@@ -669,7 +682,10 @@ pub fn create_soft_connection<P: AsRef<str>>(original: P, link: P) -> Result<(),
 /// shed_leaf("soft_link.txt").unwrap();
 /// ```
 #[cfg(windows)]
-pub fn create_soft_connection<P: AsRef<str>>(original: P, link: P) -> Result<(), std::io::Error> {
+pub fn create_soft_connection<P1: AsRef<Path>, P2: AsRef<Path>>(
+    original: P1,
+    link: P2,
+) -> Result<(), std::io::Error> {
     use std::path::Path;
     let original_path = Path::new(original.as_ref());
     if original_path.is_dir() {

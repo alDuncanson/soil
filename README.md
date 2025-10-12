@@ -53,6 +53,40 @@ cargo install --path .
 cargo run -- --help
 ```
 
+## Path Ergonomics
+
+Soil functions use `AsRef<Path>` for path parameters, providing excellent ergonomics by accepting multiple path types seamlessly:
+
+```rust
+use soil::*;
+use std::path::{Path, PathBuf};
+
+// All of these work without conversion!
+inscribe_leaf("file.txt", "content")?;           // &str
+inscribe_leaf(String::from("file.txt"), "content")?; // String  
+inscribe_leaf(PathBuf::from("file.txt"), "content")?; // PathBuf
+inscribe_leaf(Path::new("file.txt"), "content")?;    // &Path
+
+// Mix and match path types in the same function call
+let source = PathBuf::from("source.txt");
+let dest = "destination.txt";  // string literal
+propagate_leaf(source, dest)?;  // Works perfectly!
+
+// Build paths naturally
+let base = Path::new("my_project");
+let config_file = base.join("config").join("app.toml");
+let content = read_chronicle(&config_file)?;
+```
+
+### Benefits
+- **No conversions needed**: Pass any path-like type directly
+- **Backward compatible**: Existing string-based code continues to work
+- **Idiomatic**: Follows Rust standard library patterns
+- **Flexible**: Mix different path types in the same operation
+- **Type safe**: Compile-time guarantees for path operations
+
+Try the ergonomics example: `cargo run --example path_ergonomics`
+
 ## Command Reference
 
 ### File Operations

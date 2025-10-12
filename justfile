@@ -92,6 +92,10 @@ nix-build:
 nix-check:
     nix flake check
 
+# Run the path ergonomics example
+example-ergonomics:
+    cargo run --example path_ergonomics
+
 # Example commands - show common usage patterns
 examples:
     @echo "Common soil commands:"
@@ -102,3 +106,6 @@ examples:
     @echo "  just run inscribe test.txt 'Hello'  # Write to file"
     @echo "  just run chronicle test.txt         # Read file content"
     @echo "  just run exists ./some/path         # Check if path exists"
+    @echo ""
+    @echo "Try the path ergonomics example:"
+    @echo "  just example-ergonomics             # Demonstrate AsRef<Path> benefits"
