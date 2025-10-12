@@ -85,7 +85,6 @@ let content = read_chronicle(&config_file)?;
 - **Flexible**: Mix different path types in the same operation
 - **Type safe**: Compile-time guarantees for path operations
 
-Try the ergonomics example: `cargo run --example path_ergonomics`
 
 ## Command Reference
 
@@ -173,30 +172,8 @@ nix develop
 cargo build          # Build the project
 cargo run -- <args>  # Run with arguments
 cargo test           # Run tests
-cargo watch -x run   # Watch for changes
+cargo watch -x run   # Watch for changes and rebuild
 bacon                # Interactive build watcher
-just --list          # Show all available tasks
-```
-
-### Using Just (Task Runner)
-
-If you have `just` installed, you can use the included justfile:
-
-```bash
-# Show all available commands
-just
-
-# Common development tasks
-just build           # Build the project
-just test            # Run tests
-just run survey .    # Run with arguments
-just watch           # Watch for changes and rebuild
-just check           # Run all checks (fmt, clippy, test)
-
-# Nix-specific tasks
-just nix-build       # Build with Nix
-just nix-run survey . # Run with Nix
-just nix-dev         # Enter Nix development shell
 ```
 
 ### Available Tools in Development Environment
@@ -207,7 +184,6 @@ The Nix development shell includes:
 - **cargo-edit** for dependency management
 - **cargo-audit** for security auditing
 - **bacon** for interactive development
-- **just** for task running
 - **fd** and **ripgrep** for file searching
 - **mdbook** for documentation
 
@@ -300,9 +276,9 @@ Soil uses botanical metaphors to make file system operations more intuitive:
 
 1. Enter the development environment: `nix develop`
 2. Make your changes
-3. Run tests: `just test` or `cargo test`
-4. Check formatting and lints: `just check`
-5. Build and test: `just build && just run survey .`
+3. Run tests: `cargo test`
+4. Check formatting and lints: `cargo fmt --check && cargo clippy`
+5. Build and test: `cargo build && cargo run -- survey .`
 
 ## License
 

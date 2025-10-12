@@ -72,7 +72,6 @@
 
             # Git and general utilities
             pkgs.git
-            pkgs.just
             pkgs.fd
             pkgs.ripgrep
           ];
