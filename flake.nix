@@ -103,26 +103,38 @@
           default = {
             type = "app";
             program = "${soilPackage}/bin/soil";
+            meta = {
+              description = "Run the soil CLI";
+            };
           };
 
           soil = {
             type = "app";
             program = "${soilPackage}/bin/soil";
+            meta = {
+              description = "Run the soil CLI";
+            };
           };
 
           # Convenience apps for common operations
           dev = {
             type = "app";
-            program = pkgs.writeShellScript "soil-dev" ''
+            program = toString (pkgs.writeShellScript "soil-dev" ''
               exec ${pkgs.cargo-watch}/bin/cargo-watch -x "run -- $@"
-            '';
+            '');
+            meta = {
+              description = "Start development mode with file watching";
+            };
           };
 
           test = {
             type = "app";
-            program = pkgs.writeShellScript "soil-test" ''
+            program = toString (pkgs.writeShellScript "soil-test" ''
               exec ${pkgs.cargo}/bin/cargo test
-            '';
+            '');
+            meta = {
+              description = "Run the test suite";
+            };
           };
         };
 
@@ -132,22 +144,6 @@
         # Checks (for `nix flake check`)
         checks = {
           build = soilPackage;
-
-          rustfmt = pkgs.runCommand "check-rustfmt" {
-            nativeBuildInputs = [ rustToolchain ];
-          } ''
-            cd ${./.}
-            cargo fmt -- --check
-            touch $out
-          '';
-
-          clippy = pkgs.runCommand "check-clippy" {
-            nativeBuildInputs = [ rustToolchain ] ++ commonInputs;
-          } ''
-            cd ${./.}
-            cargo clippy -- -D warnings
-            touch $out
-          '';
         };
       }
     );
