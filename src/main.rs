@@ -1,8 +1,9 @@
 use clap::{Parser, Subcommand};
 use soil::{
-    clear_grove, create_hard_graft, examine_specimen, exists, grow_branch, harvest_essence,
-    inscribe_leaf, propagate_leaf, prune_branch, read_chronicle, shed_leaf, sprout_branch,
-    survey_canopy, trace_to_root, transplant,
+    adjust_vitality, clear_grove, create_hard_graft, create_soft_connection,
+    examine_outer_characteristics, examine_specimen, exists, grow_branch, harvest_essence,
+    inscribe_leaf, propagate_leaf, prune_branch, read_chronicle, read_soft_connection, shed_leaf,
+    sprout_branch, survey_canopy, trace_to_root, transplant,
 };
 use std::process;
 
@@ -194,6 +195,58 @@ enum Commands {
         link: String,
     },
 
+    /// Create a symbolic link
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// soil connect original.txt symlink.txt
+    /// ```
+    Connect {
+        /// The target path
+        original: String,
+        /// The symbolic link path
+        link: String,
+    },
+
+    /// Read the target of a symbolic link
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// soil follow symlink.txt
+    /// ```
+    Follow {
+        /// The symbolic link path
+        path: String,
+    },
+
+    /// Modify file or directory permissions
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// soil vitalize file.txt readonly
+    /// ```
+    Vitalize {
+        /// The path to modify
+        path: String,
+        /// Permission mode (readonly/writable)
+        mode: String,
+    },
+
+    /// Get metadata of a symbolic link without following it
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// soil surface symlink.txt
+    /// ```
+    Surface {
+        /// The path to examine
+        path: String,
+    },
+
     /// Check if a path exists
     ///
     /// # Examples
@@ -382,6 +435,87 @@ fn main() {
                 eprintln!(
                     "Error creating hard graft from '{}' to '{}': {}",
                     original, link, error
+                );
+                process::exit(1);
+            }
+        },
+
+        Commands::Connect { original, link } => match create_soft_connection(&original, &link) {
+            Ok(_) => {
+                println!(
+                    "Successfully created soft connection from '{}' to '{}'",
+                    original, link
+                );
+            }
+            Err(error) => {
+                eprintln!(
+                    "Error creating soft connection from '{}' to '{}': {}",
+                    original, link, error
+                );
+                process::exit(1);
+            }
+        },
+
+        Commands::Follow { path } => match read_soft_connection(&path) {
+            Ok(target) => {
+                println!("Symbolic link '{}' points to: {}", path, target);
+            }
+            Err(error) => {
+                eprintln!("Error following soft connection '{}': {}", path, error);
+                process::exit(1);
+            }
+        },
+
+        Commands::Vitalize { path, mode } => match examine_specimen(&path) {
+            Ok(metadata) => {
+                let mut perms = metadata.permissions();
+                match mode.as_str() {
+                    "readonly" => perms.set_readonly(true),
+                    "writable" => perms.set_readonly(false),
+                    _ => {
+                        eprintln!("Invalid mode '{}'. Use 'readonly' or 'writable'", mode);
+                        process::exit(1);
+                    }
+                }
+                match adjust_vitality(&path, perms) {
+                    Ok(_) => println!("Successfully adjusted vitality of '{}' to {}", path, mode),
+                    Err(error) => {
+                        eprintln!("Error adjusting vitality of '{}': {}", path, error);
+                        process::exit(1);
+                    }
+                }
+            }
+            Err(error) => {
+                eprintln!("Error examining specimen '{}': {}", path, error);
+                process::exit(1);
+            }
+        },
+
+        Commands::Surface { path } => match examine_outer_characteristics(&path) {
+            Ok(metadata) => {
+                println!("Surface characteristics of '{}':", path);
+                println!("  Size: {} bytes", metadata.len());
+                println!(
+                    "  Type: {}",
+                    if metadata.file_type().is_symlink() {
+                        "Symbolic Link"
+                    } else if metadata.is_file() {
+                        "File"
+                    } else if metadata.is_dir() {
+                        "Directory"
+                    } else {
+                        "Other"
+                    }
+                );
+                println!("  Read-only: {}", metadata.permissions().readonly());
+                if let Ok(modified) = metadata.modified() {
+                    println!("  Modified: {:?}", modified);
+                }
+            }
+            Err(error) => {
+                eprintln!(
+                    "Error examining surface characteristics of '{}': {}",
+                    path, error
                 );
                 process::exit(1);
             }
