@@ -468,20 +468,52 @@ fn main() {
 
         Commands::Vitalize { path, mode } => match examine_specimen(&path) {
             Ok(metadata) => {
-                let mut perms = metadata.permissions();
-                match mode.as_str() {
-                    "readonly" => perms.set_readonly(true),
-                    "writable" => perms.set_readonly(false),
-                    _ => {
-                        eprintln!("Invalid mode '{}'. Use 'readonly' or 'writable'", mode);
-                        process::exit(1);
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::{MetadataExt, PermissionsExt};
+
+                    let current_mode = metadata.mode();
+                    let new_mode = match mode.as_str() {
+                        // clear all write bits (owner/group/other)
+                        "readonly" => current_mode & !0o222,
+                        // ensure owner-writable; do not broaden group/other write bits
+                        "writable" => current_mode | 0o200,
+                        _ => {
+                            eprintln!("Invalid mode '{}'. Use 'readonly' or 'writable'", mode);
+                            process::exit(1);
+                        }
+                    };
+                    let perms = PermissionsExt::from_mode(new_mode);
+                    match adjust_vitality(&path, perms) {
+                        Ok(_) => {
+                            println!("Successfully adjusted vitality of '{}' to {}", path, mode)
+                        }
+                        Err(error) => {
+                            eprintln!("Error adjusting vitality of '{}': {}", path, error);
+                            process::exit(1);
+                        }
                     }
                 }
-                match adjust_vitality(&path, perms) {
-                    Ok(_) => println!("Successfully adjusted vitality of '{}' to {}", path, mode),
-                    Err(error) => {
-                        eprintln!("Error adjusting vitality of '{}': {}", path, error);
-                        process::exit(1);
+
+                #[cfg(windows)]
+                {
+                    let mut perms = metadata.permissions();
+                    match mode.as_str() {
+                        "readonly" => perms.set_readonly(true),
+                        "writable" => perms.set_readonly(false),
+                        _ => {
+                            eprintln!("Invalid mode '{}'. Use 'readonly' or 'writable'", mode);
+                            process::exit(1);
+                        }
+                    }
+                    match adjust_vitality(&path, perms) {
+                        Ok(_) => {
+                            println!("Successfully adjusted vitality of '{}' to {}", path, mode)
+                        }
+                        Err(error) => {
+                            eprintln!("Error adjusting vitality of '{}': {}", path, error);
+                            process::exit(1);
+                        }
                     }
                 }
             }
