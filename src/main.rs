@@ -1,9 +1,8 @@
 use clap::{Parser, Subcommand};
 use soil::{
-    adjust_vitality, clear_grove, create_hard_graft, create_soft_connection,
-    examine_outer_characteristics, examine_specimen, exists, grow_branch, harvest_essence,
-    inscribe_leaf, propagate_leaf, prune_branch, read_chronicle, read_soft_connection, shed_leaf,
-    sprout_branch, survey_canopy, trace_to_root, transplant,
+    copy_file, create_dir, create_hard_link, create_symlink, ensure_dir, exists, list_dir,
+    metadata, move_path, read_bytes, read_symlink, read_text, remove_dir_all, remove_empty_dir,
+    remove_file, resolve_path, set_permissions, symlink_metadata, write_file,
 };
 use std::process;
 
@@ -24,9 +23,9 @@ enum Commands {
     /// # Examples
     ///
     /// ```
-    /// soil trace ./test_root
+    /// soil resolve ./test_root
     /// ```
-    Trace {
+    Resolve {
         /// The path to canonicalize
         path: String,
     },
@@ -36,13 +35,13 @@ enum Commands {
     /// # Examples
     ///
     /// ```
-    /// soil propagate source.txt destination.txt
+    /// soil copy source.txt destination.txt
     /// ```
-    Propagate {
+    Copy {
         /// The source file to copy
-        scion: String,
+        src: String,
         /// The destination path
-        rootstock: String,
+        dst: String,
     },
 
     /// Create a directory and all parent directories
@@ -50,9 +49,9 @@ enum Commands {
     /// # Examples
     ///
     /// ```
-    /// soil grow ./new/directory/path
+    /// soil mkdirp ./new/directory/path
     /// ```
-    Grow {
+    Mkdirp {
         /// The directory path to create
         path: String,
     },
@@ -62,9 +61,9 @@ enum Commands {
     /// # Examples
     ///
     /// ```
-    /// soil sprout ./parent/child
+    /// soil mkdir ./parent/child
     /// ```
-    Sprout {
+    Mkdir {
         /// The directory path to create
         path: String,
     },
@@ -74,9 +73,9 @@ enum Commands {
     /// # Examples
     ///
     /// ```
-    /// soil survey ./directory
+    /// soil ls ./directory
     /// ```
-    Survey {
+    Ls {
         /// The directory path to list
         path: String,
     },
@@ -86,9 +85,9 @@ enum Commands {
     /// # Examples
     ///
     /// ```
-    /// soil shed ./file.txt
+    /// soil rm ./file.txt
     /// ```
-    Shed {
+    Rm {
         /// The file path to remove
         path: String,
     },
@@ -98,9 +97,9 @@ enum Commands {
     /// # Examples
     ///
     /// ```
-    /// soil prune ./empty_directory
+    /// soil rmdir ./empty_directory
     /// ```
-    Prune {
+    Rmdir {
         /// The directory path to remove
         path: String,
     },
@@ -110,9 +109,9 @@ enum Commands {
     /// # Examples
     ///
     /// ```
-    /// soil clear ./directory
+    /// soil rmrf ./directory
     /// ```
-    Clear {
+    Rmrf {
         /// The directory path to remove recursively
         path: String,
     },
@@ -122,9 +121,9 @@ enum Commands {
     /// # Examples
     ///
     /// ```
-    /// soil transplant old_name.txt new_name.txt
+    /// soil mv old_name.txt new_name.txt
     /// ```
-    Transplant {
+    Mv {
         /// The current path
         from: String,
         /// The destination path
@@ -136,9 +135,9 @@ enum Commands {
     /// # Examples
     ///
     /// ```
-    /// soil examine ./file.txt
+    /// soil stat ./file.txt
     /// ```
-    Examine {
+    Stat {
         /// The path to examine
         path: String,
     },
@@ -148,9 +147,9 @@ enum Commands {
     /// # Examples
     ///
     /// ```
-    /// soil harvest ./file.txt
+    /// soil read-bytes ./file.txt
     /// ```
-    Harvest {
+    ReadBytes {
         /// The file path to read
         path: String,
     },
@@ -160,9 +159,9 @@ enum Commands {
     /// # Examples
     ///
     /// ```
-    /// soil chronicle ./file.txt
+    /// soil read-text ./file.txt
     /// ```
-    Chronicle {
+    ReadText {
         /// The file path to read
         path: String,
     },
@@ -172,9 +171,9 @@ enum Commands {
     /// # Examples
     ///
     /// ```
-    /// soil inscribe ./file.txt "content"
+    /// soil write ./file.txt "content"
     /// ```
-    Inscribe {
+    Write {
         /// The file path to write to
         path: String,
         /// The content to write
@@ -186,9 +185,9 @@ enum Commands {
     /// # Examples
     ///
     /// ```
-    /// soil graft original.txt linked.txt
+    /// soil hardlink original.txt linked.txt
     /// ```
-    Graft {
+    Hardlink {
         /// The original file path
         original: String,
         /// The hard link path
@@ -200,9 +199,9 @@ enum Commands {
     /// # Examples
     ///
     /// ```
-    /// soil connect original.txt symlink.txt
+    /// soil symlink original.txt symlink.txt
     /// ```
-    Connect {
+    Symlink {
         /// The target path
         original: String,
         /// The symbolic link path
@@ -214,9 +213,9 @@ enum Commands {
     /// # Examples
     ///
     /// ```
-    /// soil follow symlink.txt
+    /// soil readlink symlink.txt
     /// ```
-    Follow {
+    Readlink {
         /// The symbolic link path
         path: String,
     },
@@ -226,9 +225,9 @@ enum Commands {
     /// # Examples
     ///
     /// ```
-    /// soil vitalize file.txt readonly
+    /// soil chmod file.txt readonly|writable
     /// ```
-    Vitalize {
+    Chmod {
         /// The path to modify
         path: String,
         /// Permission mode (readonly/writable)
@@ -240,9 +239,9 @@ enum Commands {
     /// # Examples
     ///
     /// ```
-    /// soil surface symlink.txt
+    /// soil lstat symlink.txt
     /// ```
-    Surface {
+    Lstat {
         /// The path to examine
         path: String,
     },
@@ -264,50 +263,47 @@ fn main() {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Trace { path } => match trace_to_root(&path) {
+        Commands::Resolve { path } => match resolve_path(&path) {
             Ok(canonical_path) => {
                 println!("Canonical path: {}", canonical_path);
             }
             Err(error) => {
-                eprintln!("Error tracing path '{}': {}", path, error);
+                eprintln!("Error resolving path '{}': {}", path, error);
                 process::exit(1);
             }
         },
 
-        Commands::Propagate { scion, rootstock } => match propagate_leaf(&scion, &rootstock) {
+        Commands::Copy { src, dst } => match copy_file(&src, &dst) {
             Ok(_) => {
-                println!("Successfully propagated '{}' to '{}'", scion, rootstock);
+                println!("Copied '{}' to '{}'", src, dst);
             }
             Err(error) => {
-                eprintln!(
-                    "Error propagating '{}' to '{}': {}",
-                    scion, rootstock, error
-                );
+                eprintln!("Error copying '{}' to '{}': {}", src, dst, error);
                 process::exit(1);
             }
         },
 
-        Commands::Grow { path } => match grow_branch(&path) {
+        Commands::Mkdirp { path } => match ensure_dir(&path) {
             Ok(_) => {
-                println!("Successfully grew branch at '{}'", path);
+                println!("Created directories '{}'", path);
             }
             Err(error) => {
-                eprintln!("Error growing branch '{}': {}", path, error);
+                eprintln!("Error creating directories '{}': {}", path, error);
                 process::exit(1);
             }
         },
 
-        Commands::Sprout { path } => match sprout_branch(&path) {
+        Commands::Mkdir { path } => match create_dir(&path) {
             Ok(_) => {
-                println!("Successfully sprouted branch at '{}'", path);
+                println!("Created directory '{}'", path);
             }
             Err(error) => {
-                eprintln!("Error sprouting branch '{}': {}", path, error);
+                eprintln!("Error creating directory '{}': {}", path, error);
                 process::exit(1);
             }
         },
 
-        Commands::Survey { path } => match survey_canopy(&path) {
+        Commands::Ls { path } => match list_dir(&path) {
             Ok(contents) => {
                 println!("Contents of '{}':", path);
                 for item in contents {
@@ -315,54 +311,54 @@ fn main() {
                 }
             }
             Err(error) => {
-                eprintln!("Error surveying canopy '{}': {}", path, error);
+                eprintln!("Error listing directory '{}': {}", path, error);
                 process::exit(1);
             }
         },
 
-        Commands::Shed { path } => match shed_leaf(&path) {
+        Commands::Rm { path } => match remove_file(&path) {
             Ok(_) => {
-                println!("Successfully shed leaf '{}'", path);
+                println!("Removed file '{}'", path);
             }
             Err(error) => {
-                eprintln!("Error shedding leaf '{}': {}", path, error);
+                eprintln!("Error removing file '{}': {}", path, error);
                 process::exit(1);
             }
         },
 
-        Commands::Prune { path } => match prune_branch(&path) {
+        Commands::Rmdir { path } => match remove_empty_dir(&path) {
             Ok(_) => {
-                println!("Successfully pruned branch '{}'", path);
+                println!("Removed empty directory '{}'", path);
             }
             Err(error) => {
-                eprintln!("Error pruning branch '{}': {}", path, error);
+                eprintln!("Error removing empty directory '{}': {}", path, error);
                 process::exit(1);
             }
         },
 
-        Commands::Clear { path } => match clear_grove(&path) {
+        Commands::Rmrf { path } => match remove_dir_all(&path) {
             Ok(_) => {
-                println!("Successfully cleared grove '{}'", path);
+                println!("Removed directory recursively '{}'", path);
             }
             Err(error) => {
-                eprintln!("Error clearing grove '{}': {}", path, error);
+                eprintln!("Error removing directory recursively '{}': {}", path, error);
                 process::exit(1);
             }
         },
 
-        Commands::Transplant { from, to } => match transplant(&from, &to) {
+        Commands::Mv { from, to } => match move_path(&from, &to) {
             Ok(_) => {
-                println!("Successfully transplanted '{}' to '{}'", from, to);
+                println!("Moved '{}' to '{}'", from, to);
             }
             Err(error) => {
-                eprintln!("Error transplanting '{}' to '{}': {}", from, to, error);
+                eprintln!("Error moving '{}' to '{}': {}", from, to, error);
                 process::exit(1);
             }
         },
 
-        Commands::Examine { path } => match examine_specimen(&path) {
+        Commands::Stat { path } => match metadata(&path) {
             Ok(metadata) => {
-                println!("Specimen '{}' characteristics:", path);
+                println!("Metadata for '{}':", path);
                 println!("  Size: {} bytes", metadata.len());
                 println!(
                     "  Type: {}",
@@ -380,93 +376,83 @@ fn main() {
                 }
             }
             Err(error) => {
-                eprintln!("Error examining specimen '{}': {}", path, error);
+                eprintln!("Error reading metadata for '{}': {}", path, error);
                 process::exit(1);
             }
         },
 
-        Commands::Harvest { path } => match harvest_essence(&path) {
+        Commands::ReadBytes { path } => match read_bytes(&path) {
             Ok(content) => {
-                println!("Harvested {} bytes from '{}'", content.len(), path);
+                println!("Read {} bytes from '{}'", content.len(), path);
                 match String::from_utf8(content) {
                     Ok(text) => println!("Content:\n{}", text),
                     Err(_) => println!("Content contains non-UTF8 data"),
                 }
             }
             Err(error) => {
-                eprintln!("Error harvesting essence from '{}': {}", path, error);
+                eprintln!("Error reading bytes from '{}': {}", path, error);
                 process::exit(1);
             }
         },
 
-        Commands::Chronicle { path } => match read_chronicle(&path) {
+        Commands::ReadText { path } => match read_text(&path) {
             Ok(content) => {
-                println!("Chronicle from '{}':", path);
+                println!("Text from '{}':", path);
                 println!("{}", content);
             }
             Err(error) => {
-                eprintln!("Error reading chronicle from '{}': {}", path, error);
+                eprintln!("Error reading text from '{}': {}", path, error);
                 process::exit(1);
             }
         },
 
-        Commands::Inscribe { path, content } => match inscribe_leaf(&path, &content) {
+        Commands::Write { path, content } => match write_file(&path, &content) {
             Ok(_) => {
-                println!(
-                    "Successfully inscribed leaf at '{}' ({} characters)",
-                    path,
-                    content.len()
-                );
+                println!("Wrote {} bytes to '{}'", content.len(), path);
             }
             Err(error) => {
-                eprintln!("Error inscribing leaf at '{}': {}", path, error);
+                eprintln!("Error writing to '{}': {}", path, error);
                 process::exit(1);
             }
         },
 
-        Commands::Graft { original, link } => match create_hard_graft(&original, &link) {
+        Commands::Hardlink { original, link } => match create_hard_link(&original, &link) {
             Ok(_) => {
-                println!(
-                    "Successfully created hard graft from '{}' to '{}'",
-                    original, link
-                );
+                println!("Created hard link '{}' -> '{}'", link, original);
             }
             Err(error) => {
                 eprintln!(
-                    "Error creating hard graft from '{}' to '{}': {}",
-                    original, link, error
+                    "Error creating hard link '{}' -> '{}': {}",
+                    link, original, error
                 );
                 process::exit(1);
             }
         },
 
-        Commands::Connect { original, link } => match create_soft_connection(&original, &link) {
+        Commands::Symlink { original, link } => match create_symlink(&original, &link) {
             Ok(_) => {
-                println!(
-                    "Successfully created soft connection from '{}' to '{}'",
-                    original, link
-                );
+                println!("Created symlink '{}' -> '{}'", link, original);
             }
             Err(error) => {
                 eprintln!(
-                    "Error creating soft connection from '{}' to '{}': {}",
-                    original, link, error
+                    "Error creating symlink '{}' -> '{}': {}",
+                    link, original, error
                 );
                 process::exit(1);
             }
         },
 
-        Commands::Follow { path } => match read_soft_connection(&path) {
+        Commands::Readlink { path } => match read_symlink(&path) {
             Ok(target) => {
                 println!("Symbolic link '{}' points to: {}", path, target);
             }
             Err(error) => {
-                eprintln!("Error following soft connection '{}': {}", path, error);
+                eprintln!("Error reading symlink '{}': {}", path, error);
                 process::exit(1);
             }
         },
 
-        Commands::Vitalize { path, mode } => match examine_specimen(&path) {
+        Commands::Chmod { path, mode } => match metadata(&path) {
             Ok(metadata) => {
                 #[cfg(unix)]
                 {
@@ -484,12 +470,12 @@ fn main() {
                         }
                     };
                     let perms = PermissionsExt::from_mode(new_mode);
-                    match adjust_vitality(&path, perms) {
+                    match set_permissions(&path, perms) {
                         Ok(_) => {
-                            println!("Successfully adjusted vitality of '{}' to {}", path, mode)
+                            println!("Updated permissions of '{}' to {}", path, mode)
                         }
                         Err(error) => {
-                            eprintln!("Error adjusting vitality of '{}': {}", path, error);
+                            eprintln!("Error updating permissions of '{}': {}", path, error);
                             process::exit(1);
                         }
                     }
@@ -506,26 +492,26 @@ fn main() {
                             process::exit(1);
                         }
                     }
-                    match adjust_vitality(&path, perms) {
+                    match set_permissions(&path, perms) {
                         Ok(_) => {
-                            println!("Successfully adjusted vitality of '{}' to {}", path, mode)
+                            println!("Updated permissions of '{}' to {}", path, mode)
                         }
                         Err(error) => {
-                            eprintln!("Error adjusting vitality of '{}': {}", path, error);
+                            eprintln!("Error updating permissions of '{}': {}", path, error);
                             process::exit(1);
                         }
                     }
                 }
             }
             Err(error) => {
-                eprintln!("Error examining specimen '{}': {}", path, error);
+                eprintln!("Error reading metadata for '{}': {}", path, error);
                 process::exit(1);
             }
         },
 
-        Commands::Surface { path } => match examine_outer_characteristics(&path) {
+        Commands::Lstat { path } => match symlink_metadata(&path) {
             Ok(metadata) => {
-                println!("Surface characteristics of '{}':", path);
+                println!("lstat for '{}':", path);
                 println!("  Size: {} bytes", metadata.len());
                 println!(
                     "  Type: {}",
@@ -545,10 +531,7 @@ fn main() {
                 }
             }
             Err(error) => {
-                eprintln!(
-                    "Error examining surface characteristics of '{}': {}",
-                    path, error
-                );
+                eprintln!("Error lstat '{}': {}", path, error);
                 process::exit(1);
             }
         },
