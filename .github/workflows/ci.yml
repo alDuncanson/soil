@@ -34,7 +34,7 @@ jobs:
         run: cargo fmt --all --check
 
   clippy:
-    name: lint (clippy)
+    name: lint
     runs-on: ubuntu-latest
     steps:
       - name: checkout
@@ -52,7 +52,7 @@ jobs:
         run: cargo clippy --all-targets --all-features -- -D warnings
 
   check:
-    name: cargo check
+    name: analyze
     runs-on: ubuntu-latest
     steps:
       - name: checkout
@@ -72,7 +72,6 @@ jobs:
     needs: [fmt, clippy, check]
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
     steps:
