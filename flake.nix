@@ -1,5 +1,5 @@
 {
-  description = "Soil - A CLI for file system operations with nature-themed naming";
+  description = "soil - an ergonomic filesystem API and a tiny CLI.";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -29,7 +29,7 @@
         # Build the Rust package
         soilPackage = pkgs.rustPlatform.buildRustPackage {
           pname = "soil";
-          version = "0.1.0";
+          version = "1.0.0";
 
           src = ./.;
 
