@@ -727,8 +727,8 @@ mod tests {
     #[test]
     fn test_trace_to_root() {
         let guard = setup_test();
-        let _ = grow_branch(&format!("{}/test", guard.test_root));
-        let canonical_path = trace_to_root(&format!("{}/test", guard.test_root));
+        let _ = grow_branch(format!("{}/test", guard.test_root));
+        let canonical_path = trace_to_root(format!("{}/test", guard.test_root));
 
         assert!(canonical_path.is_ok(), "Failed to canonicalize path");
     }
@@ -736,7 +736,7 @@ mod tests {
     #[test]
     fn test_propagate_leaf() {
         let guard = setup_test();
-        let _ = grow_branch(&format!("{}/test", guard.test_root));
+        let _ = grow_branch(format!("{}/test", guard.test_root));
 
         let scion = &*format!("{}/test/scion.txt", guard.test_root);
         let rootstock = &*format!("{}/test/rootstock.txt", guard.test_root);
@@ -757,9 +757,9 @@ mod tests {
         let test_dir = &*format!("{}/survey_test", guard.test_root);
         let _ = grow_branch(test_dir);
 
-        inscribe_leaf(&format!("{}/file1.txt", test_dir), "content1").unwrap();
-        inscribe_leaf(&format!("{}/file2.txt", test_dir), "content2").unwrap();
-        let _ = grow_branch(&format!("{}/subdir", test_dir));
+        inscribe_leaf(format!("{}/file1.txt", test_dir), "content1").unwrap();
+        inscribe_leaf(format!("{}/file2.txt", test_dir), "content2").unwrap();
+        let _ = grow_branch(format!("{}/subdir", test_dir));
 
         let contents = survey_canopy(test_dir).unwrap();
         assert!(contents.len() >= 3);
@@ -805,10 +805,10 @@ mod tests {
     fn test_clear_grove() {
         let guard = setup_test();
         let grove_dir = &*format!("{}/test_grove", guard.test_root);
-        let _ = grow_branch(&format!("{}/deep/nested", grove_dir));
-        inscribe_leaf(&format!("{}/leaf.txt", grove_dir), "content").unwrap();
+        let _ = grow_branch(format!("{}/deep/nested", grove_dir));
+        inscribe_leaf(format!("{}/leaf.txt", grove_dir), "content").unwrap();
         inscribe_leaf(
-            &format!("{}/deep/another_leaf.txt", grove_dir),
+            format!("{}/deep/another_leaf.txt", grove_dir),
             "more content",
         )
         .unwrap();
@@ -905,7 +905,7 @@ mod tests {
     #[test]
     fn test_grow_branch() {
         let guard = setup_test();
-        let new_branch = grow_branch(&format!("{}/test", guard.test_root));
+        let new_branch = grow_branch(format!("{}/test", guard.test_root));
 
         assert!(new_branch.is_ok(), "Failed to grow a branch");
     }
@@ -913,7 +913,7 @@ mod tests {
     #[test]
     fn test_exists() {
         let guard = setup_test();
-        let _ = grow_branch(&format!("{}/test", guard.test_root));
+        let _ = grow_branch(format!("{}/test", guard.test_root));
         let path = &*format!("{}/test", guard.test_root);
 
         assert!(exists(path), "Path does not exist");
